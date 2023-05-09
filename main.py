@@ -3,7 +3,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 from ed25519 import BadSignatureError
-import machineid
 import argparse
 import ed25519
 import base64
@@ -13,26 +12,25 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-p', '--path', dest='path', required=True, help='Path to machine file (required)')
+parser.add_argument('-p', '--path', dest='path', required=True, help='Path to license file (required)')
 parser.add_argument('-l', '--license', dest='license', required=True, help='License key (required)')
-parser.add_argument('-f', '--fingerprint', dest='fingerprint', default=machineid.hashed_id('example-app'), help='Machine fingerprint')
 
 args = parser.parse_args()
 
-# Read the machine file
-machine_file = None
+# Read the license file
+license_file = None
 
 try:
   with open(args.path) as f:
-    machine_file = f.read()
+    license_file = f.read()
 except (FileNotFoundError, PermissionError):
   print('[error] path does not exist! (or permission was denied)')
 
   sys.exit(1)
 
-# Strip the header and footer from the machine file certificate
-payload = machine_file.lstrip('-----BEGIN MACHINE FILE-----\n') \
-                      .rstrip('-----END MACHINE FILE-----\n')
+# Strip the header and footer from the license file certificate
+payload = license_file.lstrip('-----BEGIN LICENSE FILE-----\n') \
+                      .rstrip('-----END LICENSE FILE-----\n')
 
 # Decode the payload and parse the JSON object
 data = json.loads(base64.b64decode(payload))
@@ -56,7 +54,7 @@ try:
 
   verify_key.verify(
     base64.b64decode(sig),
-    ('machine/%s' % enc).encode(),
+    ('license/%s' % enc).encode(),
   )
 except (AssertionError, BadSignatureError):
   print('[error] verification failed!')
@@ -65,10 +63,9 @@ except (AssertionError, BadSignatureError):
 
 print('[info] verification successful!')
 
-# Hash the license key and fingerprint using SHA256
-digest = hashes.Hash(hashes.SHA256())
+# Hash the license key using SHA256
+digest = hashes.Hash(hashes.SHA256(), default_backend())
 digest.update(args.license.encode())
-digest.update(args.fingerprint.encode())
 key = digest.finalize()
 
 # Split and decode the enc value
