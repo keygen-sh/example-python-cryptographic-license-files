@@ -2,9 +2,13 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
-from ed25519 import BadSignatureError
+
+
+from nacl.signing import VerifyKey 
+from nacl.exceptions import BadSignatureError
+
 import argparse
-import ed25519
+#import ed25519
 import base64
 import json
 import sys
@@ -47,14 +51,13 @@ if alg != 'aes-256-gcm+ed25519':
 
 # Verify using Ed25519
 try:
-  verify_key = ed25519.VerifyingKey(
-    os.environ['KEYGEN_PUBLIC_KEY'].encode(),
-    encoding='hex',
+  verify_key = VerifyKey(
+    bytes.fromhex(os.environ['KEYGEN_PUBLIC_KEY'])
   )
 
   verify_key.verify(
-    base64.b64decode(sig),
     ('license/%s' % enc).encode(),
+    base64.b64decode(sig),
   )
 except (AssertionError, BadSignatureError):
   print('[error] verification failed!')

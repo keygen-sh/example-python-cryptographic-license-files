@@ -1,3 +1,4 @@
 argparse
 cryptography
-ed25519
+#ed25519
+pynacl
